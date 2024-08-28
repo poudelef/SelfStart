@@ -1,5 +1,9 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
+import 'dart:html' as html;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,13 +61,52 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+  // Future<void> sendImage(String blobUrl) async {
+  //   // Convert the Blob URL to a File object (for web).
+  //   html.Blob blob =
+  //       html.Url.createObjectUrlFromBlob(blobUrl as html.Blob) as html.Blob;
+  //   var reader = html.FileReader();
+  //   reader.readAsArrayBuffer(blob);
+  //   await reader.onLoad.first;
+
+  //   var file = File.fromRawPath(reader.result
+  //       as Uint8List); // For mobile, this will vary depending on how the image is captured.
+
+  //   var uri = Uri.parse('http://192.168.4.86:50600/upload');
+  //   var request = http.MultipartRequest('POST', uri)
+  //     ..files.add(await http.MultipartFile.fromPath('image', file.path));
+
+  //   var response = await request.send();
+
+  //   if (response.statusCode == 200) {
+  //     print('Image sent successfully');
+  //   } else {
+  //     print('Image failed to send');
+  //   }
+  // }
+
+  Future<void> sendImage(Uint8List imageBytes) async {
+    var uri = Uri.parse('http://192.168.4.86:50600/upload');
+    var request = http.MultipartRequest('POST', uri)
+      ..files.add(http.MultipartFile.fromBytes('image', imageBytes,
+          filename: 'upload.png'));
+
+    var response = await request.send();
+
+    if (response.statusCode == 200) {
+      print('Image sent successfully');
+    } else {
+      print('Image failed to send');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF060A27),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
+          Positioned.fill(
             child: FutureBuilder<void>(
               future: _initializeControllerFuture,
               builder: (context, snapshot) {
@@ -75,8 +118,10 @@ class _MyHomePageState extends State<MyHomePage> {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 30.0),
+          Positioned(
+            bottom: 30.0,
+            left: 0,
+            right: 0,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -85,7 +130,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     try {
                       await _initializeControllerFuture;
                       final image = await _controller.takePicture();
-                      // image has the image.
+                      // image has the image captured
+                      // await sendImage(File(image.path));
                       print('Picture taken: ${image.path}');
                     } catch (e) {
                       print(e);
@@ -96,7 +142,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
                 const SizedBox(width: 20),
                 FloatingActionButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(builder: (context) => ()),
+                    // );
+                  },
                   backgroundColor: Colors.deepPurple,
                   child: const Icon(Icons.book),
                 ),
@@ -108,3 +159,10 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 }
+
+
+// Now in your main flutter file, where you want to access, add this code in the function you want to get your output by python script.
+
+// var data = await getData('http://localhost:50600/);
+// var decodedData = jsonDecode(data);
+// print(decodedData['query']);
